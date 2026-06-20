@@ -26,45 +26,45 @@ ColorCompression_enable:readonly
 */
 
 export function ControllableParameters() {
-    return [
-        {"property":"shutdownColor", "group":"lighting", "label":"Shutdown Color", "min":"0", "max":"360", "type":"color", "default":"#000000"},
-        {"property":"LightingMode", "group":"lighting", "label":"Lighting Mode", "type":"combobox", "values":["Canvas", "Forced"], "default":"Canvas"},
-        {"property":"forcedColor", "group":"lighting", "label":"Forced Color", "min":"0", "max":"360", "type":"color", "default":"#FF0000"},
-        {"property":"ColorCompression_enable", "group":"", "label":"Enable Color Compression (reduces color spectrum & raises frame rate)", "type":"boolean", "default":"false", "tooltip":"Changes are applied after 3sec, but ONLY when the device is ENABLED!"},
-        {"property":"StatusLED_enable", "group":"", "label":"Enable Onboard Status LED", "type":"boolean", "default":"false", "tooltip":"Changes are applied after 3sec, but ONLY when the device is ENABLED!"},
-        {"property":"HWL_enable", "group":"", "label":"Enable Hardware Lighting", "type":"boolean", "default":"false", "tooltip":"Changes are applied after 3sec, but ONLY when the device is ENABLED!"},
-        {"property":"HWL_effectMode", "group":"", "label":"Hardware Lighting Effect", "type":"combobox", "values":["Rainbow Wave", "Rainbow Cycle", "Solid Color", "Breathing Color"], "default":"Rainbow Wave", "tooltip":"Changes are applied after 3sec, but ONLY when the device is ENABLED!"},
-        {"property":"HWL_return", "group":"", "label":"Enable returning to Hardware Lighting when not controlled by SignalRGB", "type":"boolean", "default":"false", "tooltip":"Changes are applied after 3sec, but ONLY when the device is ENABLED!"},
-        {"property":"HWL_returnafter", "group":"", "label":"Return to Hardware Lighting after selected amount seconds", "step":"1", "type":"number", "min":"1", "max":"60", "default":"10", "tooltip":"Changes are applied after 3sec, but ONLY when the device is ENABLED!"},
-        {"property":"HWL_effectSpeed", "group":"", "label":"Speed of Hardware Lighting Effect", "step":"1", "type":"number", "min":"1", "max":"20", "default":"6", "tooltip":"Changes are applied after 3sec, but ONLY when the device is ENABLED!"},
-        {"property":"HWL_color", "group":"", "label":"Select color for Solid & Breathing Effect", "min":"0", "max":"360", "type":"color", "default":"#800080", "tooltip":"Changes are applied after 3sec, but ONLY when the device is ENABLED!"},
-        {"property":"HWL_brightness", "group":"", "label":"Hardware Lighting Brightness", "step":"1", "type":"number", "min":"10", "max":"255", "default":"127", "tooltip":"Changes are applied after 3sec, but ONLY when the device is ENABLED!"},
-    ];
+return [
+{"property":"shutdownColor", "group":"lighting", "label":"Shutdown Color", "min":"0", "max":"360", "type":"color", "default":"#000000"},
+{"property":"LightingMode", "group":"lighting", "label":"Lighting Mode", "type":"combobox", "values":["Canvas", "Forced"], "default":"Canvas"},
+{"property":"forcedColor", "group":"lighting", "label":"Forced Color", "min":"0", "max":"360", "type":"color", "default":"#FF0000"},
+{"property":"ColorCompression_enable", "group":"", "label":"Enable Color Compression (reduces color spectrum & raises frame rate)", "type":"boolean", "default":"false", "tooltip":"Changes are applied after 3sec, but ONLY when the device is ENABLED!"},
+{"property":"StatusLED_enable", "group":"", "label":"Enable Onboard Status LED", "type":"boolean", "default":"false", "tooltip":"Changes are applied after 3sec, but ONLY when the device is ENABLED!"},
+{"property":"HWL_enable", "group":"", "label":"Enable Hardware Lighting", "type":"boolean", "default":"false", "tooltip":"Changes are applied after 3sec, but ONLY when the device is ENABLED!"},
+{"property":"HWL_effectMode", "group":"", "label":"Hardware Lighting Effect", "type":"combobox", "values":["Rainbow Wave", "Rainbow Cycle", "Solid Color", "Breathing Color"], "default":"Rainbow Wave", "tooltip":"Changes are applied after 3sec, but ONLY when the device is ENABLED!"},
+{"property":"HWL_return", "group":"", "label":"Enable returning to Hardware Lighting when not controlled by SignalRGB", "type":"boolean", "default":"false", "tooltip":"Changes are applied after 3sec, but ONLY when the device is ENABLED!"},
+{"property":"HWL_returnafter", "group":"", "label":"Return to Hardware Lighting after selected amount seconds", "step":"1", "type":"number", "min":"1", "max":"60", "default":"10", "tooltip":"Changes are applied after 3sec, but ONLY when the device is ENABLED!"},
+{"property":"HWL_effectSpeed", "group":"", "label":"Speed of Hardware Lighting Effect", "step":"1", "type":"number", "min":"1", "max":"20", "default":"6", "tooltip":"Changes are applied after 3sec, but ONLY when the device is ENABLED!"},
+{"property":"HWL_color", "group":"", "label":"Select color for Solid & Breathing Effect", "min":"0", "max":"360", "type":"color", "default":"#800080", "tooltip":"Changes are applied after 3sec, but ONLY when the device is ENABLED!"},
+{"property":"HWL_brightness", "group":"", "label":"Hardware Lighting Brightness", "step":"1", "type":"number", "min":"10", "max":"255", "default":"127", "tooltip":"Changes are applied after 3sec, but ONLY when the device is ENABLED!"},
+];
 }
 
 export function DeviceMessages() {
-    return [
-        {property: "Hardware Lighting", message:"Hardware Lighting", tooltip: "Changes to Hardware Lighting are applied after 3sec, but ONLY when the device is ENABLED!"},
-    ];
+return [
+{property: "Hardware Lighting", message:"Hardware Lighting", tooltip: "Changes to Hardware Lighting are applied after 3sec, but ONLY when the device is ENABLED!"},
+];
 }
 
 // ================= 16 通道配置 =================
-// 【警告】此值必须与 Arduino 固件中的 maxLeds_pio0 和 maxLeds_pio1 严格一致！
-const DeviceMaxLedLimit = 800; 
+// 【严重警告】此值必须与 Arduino 固件中 channelLedCount 数组里的实际灯珠数严格一致！
+// 你的固件中每通道是 40 颗灯，这里必须填 40。如果填 800 会导致数据包错乱，灯效无法控制。
+const DeviceMaxLedLimit = 40; 
 const ChannelArray = [];
 for(let i = 1; i <= 16; i++) {
     ChannelArray.push([`Channel ${i}`, DeviceMaxLedLimit]);
 }
 
 function SetupChannels() {
-    // 总灯珠限制 = 单通道限制 * 16
-    device.SetLedLimit(DeviceMaxLedLimit * 16);
+    // 删除了不存在的 device.SetLedLimit API，防止 JS 报错导致插件崩溃
     for(let i = 0; i < ChannelArray.length; i++) {
         device.addChannel(ChannelArray[i][0], ChannelArray[i][1]);
     }
 }
 
-const PluginVersion = "1.3.0"; // 同步升级版本号以匹配新固件
+const PluginVersion = "1.3.0"; 
 const vKeyNames = [];
 const vKeyPositions = [];
 const MaxLedsInPacket = 20;
@@ -101,7 +101,6 @@ export function Render() {
     let allColors = [];
     let totalLeds = 0;
     
-    // 1. 遍历 16 个通道，获取颜色并拼接成全局数据流
     for(let i = 0; i < ChannelArray.length; i++) {
         const componentChannel = device.channel(ChannelArray[i][0]);
         let ChannelLedCount = componentChannel.ledCount > ChannelArray[i][1] ? ChannelArray[i][1] : componentChannel.ledCount;
@@ -120,10 +119,8 @@ export function Render() {
         totalLeds += ChannelLedCount;
     }
     
-    // 2. 统一分包发送全局数据流（保证固件端 packetCount 连续）
     SendAllChannels(allColors, totalLeds);
     
-    // 3. 处理硬件灯效(HWL)更新
     if(HWLupdateRequested == true) {
         const currentTime = Date.now();
         if(currentTime - lastHWLchange >= 3000) {
@@ -145,15 +142,12 @@ export function Shutdown(SystemSuspending) {
     SendAllChannels(RGBData, totalLeds);
 }
 
-// ================= 统一发送函数 (修复了原脚本的压缩Bug) =================
+// ================= 统一发送函数 =================
 function SendAllChannels(allColors, totalLeds) {
     const multiplier = ColorCompression_enable ? 2 : 1;
     let compressedRGB = [];
     
     if(ColorCompression_enable) {
-        // 【修复】原脚本此处循环次数计算错误会导致数组越界。
-        // 压缩逻辑：每 2 个 LED (6字节) 压缩为 3 字节。
-        // 因此循环次数应为 totalLeds / 2。
         for(let runCount = 0; runCount < totalLeds / 2; runCount++) {
             compressedRGB[(runCount*3)]   = (((allColors[(runCount*6)]   & 0xFF) >> 4) | ((((allColors[(runCount*6)+1] & 0xFF) >> 4) & 0xFF) << 4));
             compressedRGB[(runCount*3)+1] = (((allColors[(runCount*6)+2] & 0xFF) >> 4) | ((((allColors[(runCount*6)+3] & 0xFF) >> 4) & 0xFF) << 4));
@@ -161,19 +155,17 @@ function SendAllChannels(allColors, totalLeds) {
         }
     }
     
-    // 基于全局总灯珠数计算总包数
     const NumPackets = Math.ceil(totalLeds / MaxLedsInPacket / multiplier);
     let colorDataToSend = ColorCompression_enable ? compressedRGB : allColors;
     
-    // 连续分包发送
     for(let CurrPacket = 1; CurrPacket <= NumPackets; CurrPacket++) {
         let packet = [0x00, CurrPacket, NumPackets, 0x00, 0xAA];
-        packet = packet.concat(colorDataToSend.splice(0, 60)); // splice 会依次消耗数组元素
+        packet = packet.concat(colorDataToSend.splice(0, 60)); 
         device.write(packet, 65);
     }
 }
 
-// ================= 辅助函数与 HWL 逻辑 (保持原样) =================
+// ================= 辅助函数与 HWL 逻辑 =================
 function hexToRgb(hex) {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     const colors = [];
