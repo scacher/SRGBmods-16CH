@@ -100,27 +100,44 @@ function requestFirmwareVersion() {
 export function Render() {
     let allColors = [];
     let totalLeds = 0;
-
+    
+    // 遍历 16 个通道
     for(let i = 0; i < ChannelArray.length; i++) {
         const componentChannel = device.channel(ChannelArray[i][0]);
-        let ChannelLedCount = componentChannel.ledCount > ChannelArray[i][1] ? ChannelArray[i][1] : componentChannel.ledCount;
-
+        
+        // 获取用户在 SignalRGB 中设置的实际灯数
+        let userLedCount = componentChannel.ledCount > ChannelArray[i][1] ? ChannelArray[i][1] : componentChannel.ledCount;
+        
         let RGBData = [];
         if(LightingMode === "Forced") {
-            RGBData = device.createColorArray(forcedColor, ChannelLedCount, "Inline");
+            RGBData = device.createColorArray(forcedColor, userLedCount, "Inline");
         } else if(componentChannel.shouldPulseColors()) {
             const pulseColor = device.getChannelPulseColor(ChannelArray[i][0]);
-            RGBData = device.createColorArray(pulseColor, ChannelLedCount, "Inline");
+            RGBData = device.createColorArray(pulseColor, userLedCount, "Inline");
         } else {
             RGBData = componentChannel.getColors("Inline");
         }
-
+        
+        // 【关键修复】：强制每个通道固定占用 DeviceMaxLedLimit (40) 个灯珠的数据位
+        const targetDataLength = DeviceMaxLedLimit * 3; // 每个通道40颗灯 * 3(RGB) = 120个字节
+        
+        if (RGBData.length < targetDataLength) {
+            // 如果用户在UI里设置的灯数不足40（比如风扇只有6颗），用黑色(0)在末尾补齐
+            const padding = new Array(targetDataLength - RGBData.length).fill(0);
+            RGBData = RGBData.concat(padding);
+        } else if (RGBData.length > targetDataLength) {
+            // 如果超出，则截断（防止异常数据）
+            RGBData = RGBData.slice(0, targetDataLength);
+        }
+        
         allColors = allColors.concat(RGBData);
-        totalLeds += ChannelLedCount;
+        totalLeds += DeviceMaxLedLimit; // 强制累加固定数量，保证总长度永远是 16 * 40 = 640
     }
-
+    
+    // 统一分包发送全局数据流
     SendAllChannels(allColors, totalLeds);
-
+    
+    // 处理硬件灯效(HWL)更新
     if(HWLupdateRequested == true) {
         const currentTime = Date.now();
         if(currentTime - lastHWLchange >= 3000) {
@@ -131,15 +148,29 @@ export function Render() {
 
 export function Shutdown(SystemSuspending) {
     let color = SystemSuspending ? "#000000" : shutdownColor;
+    let allColors = [];
     let totalLeds = 0;
-
+    
     for(let i = 0; i < ChannelArray.length; i++) {
         const componentChannel = device.channel(ChannelArray[i][0]);
-        totalLeds += componentChannel.ledCount > ChannelArray[i][1] ? ChannelArray[i][1] : componentChannel.ledCount;
+        let userLedCount = componentChannel.ledCount > ChannelArray[i][1] ? ChannelArray[i][1] : componentChannel.ledCount;
+        
+        let RGBData = device.createColorArray(color, userLedCount, "Inline");
+        
+        // 【关键修复】：关机时同样需要补齐黑色数据，防止固件索引错位
+        const targetDataLength = DeviceMaxLedLimit * 3;
+        if (RGBData.length < targetDataLength) {
+            const padding = new Array(targetDataLength - RGBData.length).fill(0);
+            RGBData = RGBData.concat(padding);
+        } else if (RGBData.length > targetDataLength) {
+            RGBData = RGBData.slice(0, targetDataLength);
+        }
+        
+        allColors = allColors.concat(RGBData);
+        totalLeds += DeviceMaxLedLimit;
     }
-
-    let RGBData = device.createColorArray(color, totalLeds, "Inline");
-    SendAllChannels(RGBData, totalLeds);
+    
+    SendAllChannels(allColors, totalLeds);
 }
 
 // ================= 统一发送：保证 packetCount 连续到达固件的 totalLedCount =================
